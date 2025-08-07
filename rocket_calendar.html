@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short Timer's Calendar - Where is John?</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .countdown-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .rocket-container {
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        .rocket-svg {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(255, 107, 107, 0.3));
+        }
+        
+        .controls {
+            margin: 30px 0;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .control-button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+        
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-info {
+            text-align: center;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .section {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .section:hover {
+            stroke-width: 3;
+            filter: brightness(1.2);
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='index.html'">← Back</button>
+    
+    <div class="header">
+        <h1>🚀 Short Timer's Calendar 🚀</h1>
+    </div>
+    
+    <div class="countdown-info">
+        <div id="daysRemaining">Loading...</div>
+        <div id="startDate">Calendar started: August 6, 2025</div>
+    </div>
+    
+    <div class="rocket-container">
+        <svg class="rocket-svg" viewBox="0 0 800 1200" xmlns="http://www.w3.org/2000/svg" id="rocketSvg">
+            <!-- This will be populated by JavaScript -->
+        </svg>
+    </div>
+    
+    <div class="controls">
+        <button class="control-button" onclick="fillNext()">Fill Next Day</button>
+        <button class="control-button" onclick="fillTen()">Fill 10 Days</button>
+        <button class="control-button" onclick="autoFill()">Auto Fill to Today</button>
+        <button class="control-button" onclick="showCompleted()">Preview When Done</button>
+        <button class="control-button" onclick="resetRocket()">Reset Calendar</button>
+    </div>
+    
+    <div class="progress-info">
+        <div id="progressText">0 of 172 days filled</div>
+        <div id="percentageText">0% Complete</div>
+        <div id="daysLeftText">172 days remaining</div>
+    </div>
+
+    <script>
+        class RocketCalendar {
+            constructor() {
+                // ===== EASY CONFIG SECTION =====
+                this.TARGET_DATE = new Date('2026-01-26');
+                this.START_DATE = new Date('2025-08-06'); // When the countdown started
+                this.TOTAL_DAYS = 172; // Total days in the countdown
+                // ==============================
+                
+                this.filledDays = parseInt(localStorage.getItem('rocketProgress') || '0');
+                this.sectionColors = [
+                    '#ff6b6b', '#ff8e53', '#feca57', '#ff9ff3', '#54a0ff',
+                    '#5f27cd', '#00d2d3', '#ff9f43', '#ee5a24', '#009432',
+                    '#0652DD', '#9c88ff', '#fbc531', '#4834d4', '#686de0',
+                    '#ff3838', '#ff9500', '#ffdd59', '#c44569', '#f8b500'
+                ];
+                
+                this.createRocket();
+                this.updateDisplay();
+                this.restoreProgress();
+            }
+            
+            createRocket() {
+                const svg = document.getElementById('rocketSvg');
+                let sectionId = 1;
+                
+                // Create a rocket that looks like the emoji 🚀
+                // Pointed nose at top, cylindrical body, fins at bottom
+                
+                // Pointed nose cone (20 sections) - triangular top
+                this.createPointedNose(svg, sectionId);
+                sectionId += 20;
+                
+                // Main cylindrical body (130 sections) - the main rocket body
+                this.createCylindricalBody(svg, sectionId);
+                sectionId += 130;
+                
+                // Bottom fins (15 sections) - triangular fins at base
+                this.createBottomFins(svg, sectionId);
+                sectionId += 15;
+                
+                // Exhaust flames (7 sections) - coming out the bottom
+                this.createExhaustFlames(svg, sectionId);
+                
+                // Add decorative elements
+                this.addWindows(svg);
+                this.addStars(svg);
+            }
+            
+            createPointedNose(svg, startId) {
+                const noseGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                noseGroup.id = 'pointedNose';
+                
+                let sectionIndex = 0;
+                
+                // Create pointed triangular nose - 4 rows getting narrower
+                const rows = [
+                    {width: 80, sections: 8, y: 100},
+                    {width: 60, sections: 6, y: 130},
+                    {width: 40, sections: 4, y: 160},
+                    {width: 20, sections: 2, y: 190}
+                ];
+                
+                rows.forEach(row => {
+                    const sectionWidth = row.width / row.sections;
+                    const startX = 400 - (row.width / 2);
+                    
+                    for (let i = 0; i < row.sections; i++) {
+                        if (sectionIndex >= 20) break;
+                        
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', startX + (i * sectionWidth));
+                        rect.setAttribute('y', row.y);
+                        rect.setAttribute('width', sectionWidth - 1);
+                        rect.setAttribute('height', 28);
+                        rect.setAttribute('fill', 'none');
+                        rect.setAttribute('stroke', '#ffffff');
+                        rect.setAttribute('stroke-width', '2');
+                        rect.setAttribute('id', `section${startId + sectionIndex}`);
+                        rect.classList.add('section');
+                        rect.onclick = () => this.toggleSection(startId + sectionIndex);
+                        
+                        noseGroup.appendChild(rect);
+                        sectionIndex++;
+                    }
+                });
+                
+                svg.appendChild(noseGroup);
+            }
+            
+            createCylindricalBody(svg, startId) {
+                const bodyGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                bodyGroup.id = 'cylindricalBody';
+                
+                let sectionIndex = 0;
+                const bodyWidth = 200;
+                const sectionsPerRow = 10;
+                const sectionWidth = bodyWidth / sectionsPerRow;
+                const startX = 400 - (bodyWidth / 2);
+                
+                // Create 13 rows of 10 sections each = 130 sections
+                for (let row = 0; row < 13; row++) {
+                    const y = 220 + (row * 40);
+                    
+                    for (let col = 0; col < sectionsPerRow; col++) {
+                        if (sectionIndex >= 130) break;
+                        
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('x', startX + (col * sectionWidth));
+                        rect.setAttribute('y', y);
+                        rect.setAttribute('width', sectionWidth - 1);
+                        rect.setAttribute('height', 38);
+                        rect.setAttribute('fill', 'none');
+                        rect.setAttribute('stroke', '#ffffff');
+                        rect.setAttribute('stroke-width', '2');
+                        rect.setAttribute('id', `section${startId + sectionIndex}`);
+                        rect.classList.add('section');
+                        rect.onclick = () => this.toggleSection(startId + sectionIndex);
+                        
+                        bodyGroup.appendChild(rect);
+                        sectionIndex++;
+                    }
+                }
+                
+                svg.appendChild(bodyGroup);
+            }
+            
+            createBottomFins(svg, startId) {
+                const finGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                finGroup.id = 'bottomFins';
+                
+                // Left fin (5 sections)
+                for (let i = 0; i < 5; i++) {
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const baseX = 280;
+                    const baseY = 740 + (i * 15);
+                    const points = `${baseX},${baseY} ${baseX-40},${baseY+30} ${baseX},${baseY+30}`;
+                    
+                    polygon.setAttribute('points', points);
+                    polygon.setAttribute('fill', 'none');
+                    polygon.setAttribute('stroke', '#ffffff');
+                    polygon.setAttribute('stroke-width', '2');
+                    polygon.setAttribute('id', `section${startId + i}`);
+                    polygon.classList.add('section');
+                    polygon.onclick = () => this.toggleSection(startId + i);
+                    
+                    finGroup.appendChild(polygon);
+                }
+                
+                // Right fin (5 sections)
+                for (let i = 0; i < 5; i++) {
+                    const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                    const baseX = 520;
+                    const baseY = 740 + (i * 15);
+                    const points = `${baseX},${baseY} ${baseX+40},${baseY+30} ${baseX},${baseY+30}`;
+                    
+                    polygon.setAttribute('points', points);
+                    polygon.setAttribute('fill', 'none');
+                    polygon.setAttribute('stroke', '#ffffff');
+                    polygon.setAttribute('stroke-width', '2');
+                    polygon.setAttribute('id', `section${startId + 5 + i}`);
+                    polygon.classList.add('section');
+                    polygon.onclick = () => this.toggleSection(startId + 5 + i);
+                    
+                    finGroup.appendChild(polygon);
+                }
+                
+                // Bottom center sections (5 sections)
+                for (let i = 0; i < 5; i++) {
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', 350 + (i * 20));
+                    rect.setAttribute('y', 740);
+                    rect.setAttribute('width', 18);
+                    rect.setAttribute('height', 50);
+                    rect.setAttribute('fill', 'none');
+                    rect.setAttribute('stroke', '#ffffff');
+                    rect.setAttribute('stroke-width', '2');
+                    rect.setAttribute('id', `section${startId + 10 + i}`);
+                    rect.classList.add('section');
+                    rect.onclick = () => this.toggleSection(startId + 10 + i);
+                    
+                    finGroup.appendChild(rect);
+                }
+                
+                svg.appendChild(finGroup);
+            }
+            
+            createExhaustFlames(svg, startId) {
+                const flameGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                flameGroup.id = 'exhaustFlames';
+                
+                // 7 flame sections coming out the bottom
+                for (let i = 0; i < 7; i++) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const x = 360 + (i * 12);
+                    const y = 800;
+                    const d = `M${x} ${y} Q${x-8} ${y+25} ${x} ${y+50} Q${x+8} ${y+25} ${x+16} ${y+50} Q${x+8} ${y+25} ${x} ${y}`;
+                    
+                    path.setAttribute('d', d);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', '#ffffff');
+                    path.setAttribute('stroke-width', '2');
+                    path.setAttribute('id', `section${startId + i}`);
+                    path.classList.add('section');
+                    path.onclick = () => this.toggleSection(startId + i);
+                    
+                    flameGroup.appendChild(path);
+                }
+                
+                svg.appendChild(flameGroup);
+            }
+            
+            addWindows(svg) {
+                // Add 3 round windows on the body (non-fillable decorations)
+                const windows = [
+                    {x: 350, y: 300},
+                    {x: 400, y: 300},
+                    {x: 450, y: 300}
+                ];
+                
+                windows.forEach(window => {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', window.x);
+                    circle.setAttribute('cy', window.y);
+                    circle.setAttribute('r', '12');
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke', '#48dbfb');
+                    circle.setAttribute('stroke-width', '2');
+                    svg.appendChild(circle);
+                });
+            }
+            
+            addStars(svg) {
+                const stars = [
+                    {x: 100, y: 200, color: '#feca57'},
+                    {x: 700, y: 300, color: '#ff6b6b'},
+                    {x: 50, y: 500, color: '#48dbfb'},
+                    {x: 750, y: 600, color: '#feca57'},
+                    {x: 80, y: 800, color: '#ff8e53'},
+                    {x: 720, y: 900, color: '#48dbfb'}
+                ];
+                
+                stars.forEach(star => {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', star.x);
+                    circle.setAttribute('cy', star.y);
+                    circle.setAttribute('r', '3');
+                    circle.setAttribute('fill', star.color);
+                    svg.appendChild(circle);
+                });
+            }
+            
+            updateDisplay() {
+                const now = new Date();
+                const timeInterval = this.TARGET_DATE.getTime() - now.getTime();
+                const totalDaysRemaining = Math.ceil(timeInterval / (1000 * 60 * 60 * 24));
+                
+                document.getElementById('daysRemaining').textContent = 
+                    `${totalDaysRemaining} days remaining until blast off!`;
+                
+                document.getElementById('progressText').textContent = 
+                    `${this.filledDays} of ${this.TOTAL_DAYS} days filled`;
+                
+                const percentage = Math.round((this.filledDays / this.TOTAL_DAYS) * 100);
+                document.getElementById('percentageText').textContent = 
+                    `${percentage}% Complete`;
+                
+                document.getElementById('daysLeftText').textContent = 
+                    `${this.TOTAL_DAYS - this.filledDays} days left to fill`;
+            }
+            
+            fillNext() {
+                if (this.filledDays < this.TOTAL_DAYS) {
+                    this.filledDays++;
+                    this.fillSection(this.filledDays);
+                    this.saveProgress();
+                    this.updateDisplay();
+                }
+            }
+            
+            fillTen() {
+                for (let i = 0; i < 10 && this.filledDays < this.TOTAL_DAYS; i++) {
+                    this.fillNext();
+                }
+            }
+            
+            fillSection(sectionNum) {
+                const section = document.getElementById(`section${sectionNum}`);
+                if (section) {
+                    const colorIndex = (sectionNum - 1) % this.sectionColors.length;
+                    section.setAttribute('fill', this.sectionColors[colorIndex]);
+                    section.setAttribute('stroke', this.sectionColors[colorIndex]);
+                    
+                    // Add animation
+                    section.style.transition = 'all 0.5s ease';
+                    section.style.filter = 'brightness(1.3)';
+                    setTimeout(() => {
+                        section.style.filter = 'brightness(1)';
+                    }, 500);
+                }
+            }
+            
+            toggleSection(sectionNum) {
+                const section = document.getElementById(`section${sectionNum}`);
+                if (section) {
+                    const isFilled = section.getAttribute('fill') !== 'none';
+                    
+                    if (isFilled) {
+                        // Unfill
+                        section.setAttribute('fill', 'none');
+                        section.setAttribute('stroke', '#ffffff');
+                        if (sectionNum <= this.filledDays) {
+                            this.filledDays = sectionNum - 1;
+                        }
+                    } else {
+                        // Fill
+                        if (sectionNum <= this.filledDays + 1) {
+                            this.fillSection(sectionNum);
+                            if (sectionNum > this.filledDays) {
+                                this.filledDays = sectionNum;
+                            }
+                        }
+                    }
+                    
+                    this.saveProgress();
+                    this.updateDisplay();
+                }
+            }
+            
+            resetRocket() {
+                if (confirm('Are you sure you want to reset the entire calendar?')) {
+                    this.filledDays = 0;
+                    for (let i = 1; i <= this.TOTAL_DAYS; i++) {
+                        const section = document.getElementById(`section${i}`);
+                        if (section) {
+                            section.setAttribute('fill', 'none');
+                            section.setAttribute('stroke', '#ffffff');
+                        }
+                    }
+                    this.saveProgress();
+                    this.updateDisplay();
+                }
+            }
+            
+            autoFill() {
+                const now = new Date();
+                const daysPassed = Math.floor((now.getTime() - this.START_DATE.getTime()) / (1000 * 60 * 60 * 24));
+                const sectionsToFill = Math.min(Math.max(daysPassed, 0), this.TOTAL_DAYS);
+                
+                // Fill up to the calculated number
+                for (let i = 1; i <= sectionsToFill; i++) {
+                    this.fillSection(i);
+                }
+                
+                this.filledDays = sectionsToFill;
+                this.saveProgress();
+                this.updateDisplay();
+            }
+            
+            showCompleted() {
+                // Temporarily fill all sections to show what it looks like when done
+                for (let i = 1; i <= this.TOTAL_DAYS; i++) {
+                    this.fillSection(i);
+                }
+                
+                // Update display to show completion
+                document.getElementById('daysRemaining').textContent = '🎊 BLAST OFF! MISSION COMPLETE! 🎊';
+                document.getElementById('progressText').textContent = `${this.TOTAL_DAYS} of ${this.TOTAL_DAYS} days filled`;
+                document.getElementById('percentageText').textContent = '100% Complete';
+                document.getElementById('daysLeftText').textContent = '🚀 LIFTOFF! 🚀';
+                
+                // Show a temporary message
+                setTimeout(() => {
+                    alert('This is what your rocket will look like when completed!\n\nClick "Reset Calendar" to return to your actual progress, or refresh the page.');
+                }, 1000);
+            }
+            
+            restoreProgress() {
+                for (let i = 1; i <= this.filledDays; i++) {
+                    this.fillSection(i);
+                }
+            }
+            
+            saveProgress() {
+                localStorage.setItem('rocketProgress', this.filledDays.toString());
+            }
+        }
+        
+        let rocketCalendar;
+        
+        // Global functions for buttons
+        function fillNext() {
+            rocketCalendar.fillNext();
+        }
+        
+        function fillTen() {
+            rocketCalendar.fillTen();
+        }
+        
+        function resetRocket() {
+            rocketCalendar.resetRocket();
+        }
+        
+        function autoFill() {
+            rocketCalendar.autoFill();
+        }
+        
+        function showCompleted() {
+            rocketCalendar.showCompleted();
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            rocketCalendar = new RocketCalendar();
+        });
+    </script>
+</body>
+</html>
