@@ -193,7 +193,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>John's Great Escape!</h2>
+            <h2>Great Escape!</h2>
             <div class="date-button">January 26, 2026</div>
         </div>
         
@@ -204,11 +204,11 @@
         <div class="format-selector">
             <label for="formatSelect">Pick Your Poison!</label>
             <select id="formatSelect">
-                <option value="daysOnly">Days Only</option>
+                <option value="daysOnly">Days</option>
                 <option value="weeksAndDays">Weeks + Days</option>
                 <option value="monthsAndDays">Months + Days</option>
-                <option value="workingDaysOnly">Working Days Only</option>
-                <option value="workingWeeksAndDays">Working Weeks + Days</option>
+                <option value="workingDaysOnly">Work Days</option>
+                <option value="workingWeeksAndDays">Work Weeks/Days</option>
             </select>
         </div>
     </div>
@@ -216,8 +216,12 @@
     <script>
         class RetirementCountdown {
             constructor() {
+                // ===== EASY CONFIG SECTION =====
+                this.LEAVE_DAYS = 16; // Set your leave days here
+                // ==============================
+                
                 this.targetDate = new Date('2026-01-26');
-                this.leaveDays = parseInt(localStorage.getItem('leaveDays') || '0');
+                this.leaveDays = this.LEAVE_DAYS; // Uses the config above
                 this.selectedFormat = localStorage.getItem('selectedFormat') || 'daysOnly';
                 this.isRetired = false;
                 
@@ -375,14 +379,12 @@
                         displayText = `${months} month${months !== 1 ? 's' : ''} + ${monthRemainingDays} day${monthRemainingDays !== 1 ? 's' : ''}`;
                         break;
                     case 'workingDaysOnly':
-                        const suffix = this.leaveDays > 0 ? ` (${this.leaveDays} PTO)` : '';
-                        displayText = `${adjustedWorkingDays} working day${adjustedWorkingDays !== 1 ? 's' : ''}${suffix}`;
+                        displayText = `${adjustedWorkingDays} work day${adjustedWorkingDays !== 1 ? 's' : ''}`;
                         break;
                     case 'workingWeeksAndDays':
                         const workingWeeks = Math.floor(adjustedWorkingDays / 5);
                         const remainingWorkingDays = adjustedWorkingDays % 5;
-                        const workingSuffix = this.leaveDays > 0 ? ` (${this.leaveDays} PTO)` : '';
-                        displayText = `${workingWeeks} working week${workingWeeks !== 1 ? 's' : ''} + ${remainingWorkingDays} working day${remainingWorkingDays !== 1 ? 's' : ''}${workingSuffix}`;
+                        displayText = `${workingWeeks} week${workingWeeks !== 1 ? 's' : ''} + ${remainingWorkingDays} day${remainingWorkingDays !== 1 ? 's' : ''}`;
                         break;
                 }
                 
