@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retirement Countdown</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 15px;
+        }
+        
+        .header h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #374151;
+        }
+        
+        .date-button {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .date-button:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .date-picker {
+            margin-top: 15px;
+            padding: 15px;
+            font-size: 1em;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .countdown-display {
+            text-align: center;
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(156, 163, 175, 0.1);
+            border-radius: 12px;
+        }
+        
+        .countdown-text {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #374151;
+            line-height: 1.4;
+        }
+        
+        .celebration {
+            font-size: 2.5em;
+            color: #059669;
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .format-selector {
+            margin: 20px 0;
+        }
+        
+        .format-selector label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .format-selector select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .section {
+            margin: 20px 0;
+            padding: 16px;
+            background: rgba(156, 163, 175, 0.1);
+            border-radius: 12px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .section-content {
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .section-content.hidden {
+            display: none;
+        }
+        
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .stepper button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stepper button:hover {
+            background: #2563eb;
+        }
+        
+        .stepper span {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .help-text {
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+        
+        .chevron.up {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Target Date:</h2>
+            <button class="date-button" id="dateButton">January 25, 2026</button>
+            <input type="date" class="date-picker hidden" id="datePicker">
+        </div>
+        
+        <div class="countdown-display">
+            <div class="countdown-text" id="countdownText">Loading...</div>
+        </div>
+        
+        <div class="format-selector">
+            <label for="formatSelect">Display Format:</label>
+            <select id="formatSelect">
+                <option value="daysOnly">Days Only</option>
+                <option value="weeksAndDays">Weeks + Days</option>
+                <option value="monthsAndDays">Months + Days</option>
+                <option value="workingDaysOnly">Working Days Only</option>
+                <option value="workingWeeksAndDays">Working Weeks + Days</option>
+            </select>
+        </div>
+        
+        <div class="section">
+            <div class="section-header" id="leaveHeader">
+                <span>Leave</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="leaveDaysDisplay">0</span>
+                    <span class="chevron" id="leaveChevron">▼</span>
+                </div>
+            </div>
+            <div class="section-content hidden" id="leaveContent">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Total leave days:</span>
+                    <div class="stepper">
+                        <button id="decreaseLeave">−</button>
+                        <span id="leaveDays">0</span>
+                        <button id="increaseLeave">+</button>
+                    </div>
+                </div>
+                <div class="help-text">These will be subtracted from working days</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <span>Holidays</span>
+                <span id="holidaysCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RetirementCountdown {
+            constructor() {
+                this.targetDate = new Date('2026-01-25');
+                this.leaveDays = parseInt(localStorage.getItem('leaveDays') || '0');
+                this.selectedFormat = localStorage.getItem('selectedFormat') || 'daysOnly';
+                this.isRetired = false;
+                
+                // Federal holidays for 2025-2026
+                this.holidays = new Set([
+                    '2025-01-01', '2025-01-20', '2025-02-17', '2025-05-26',
+                    '2025-06-19', '2025-07-04', '2025-09-01', '2025-10-13',
+                    '2025-11-11', '2025-11-27', '2025-12-25',
+                    '2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25',
+                    '2026-06-19', '2026-07-04', '2026-09-07', '2026-10-12',
+                    '2026-11-11', '2026-11-26', '2026-12-25'
+                ]);
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.loadSavedData();
+                this.updateCountdown();
+                
+                // Update every minute
+                setInterval(() => this.updateCountdown(), 60000);
+            }
+            
+            initializeElements() {
+                this.dateButton = document.getElementById('dateButton');
+                this.datePicker = document.getElementById('datePicker');
+                this.countdownText = document.getElementById('countdownText');
+                this.formatSelect = document.getElementById('formatSelect');
+                this.leaveHeader = document.getElementById('leaveHeader');
+                this.leaveContent = document.getElementById('leaveContent');
+                this.leaveChevron = document.getElementById('leaveChevron');
+                this.leaveDaysDisplay = document.getElementById('leaveDaysDisplay');
+                this.leaveDaysElement = document.getElementById('leaveDays');
+                this.decreaseLeave = document.getElementById('decreaseLeave');
+                this.increaseLeave = document.getElementById('increaseLeave');
+                this.holidaysCount = document.getElementById('holidaysCount');
+            }
+            
+            bindEvents() {
+                this.dateButton.addEventListener('click', () => this.toggleDatePicker());
+                this.datePicker.addEventListener('change', (e) => this.setTargetDate(e.target.value));
+                this.formatSelect.addEventListener('change', (e) => this.setFormat(e.target.value));
+                this.leaveHeader.addEventListener('click', () => this.toggleLeaveDetails());
+                this.decreaseLeave.addEventListener('click', () => this.changeLeaveDays(-1));
+                this.increaseLeave.addEventListener('click', () => this.changeLeaveDays(1));
+            }
+            
+            loadSavedData() {
+                const savedDate = localStorage.getItem('targetDate');
+                if (savedDate) {
+                    this.targetDate = new Date(savedDate);
+                }
+                
+                this.updateDateDisplay();
+                this.formatSelect.value = this.selectedFormat;
+                this.leaveDaysDisplay.textContent = this.leaveDays;
+                this.leaveDaysElement.textContent = this.leaveDays;
+            }
+            
+            toggleDatePicker() {
+                const isHidden = this.datePicker.classList.contains('hidden');
+                if (isHidden) {
+                    this.datePicker.classList.remove('hidden');
+                    this.datePicker.value = this.targetDate.toISOString().split('T')[0];
+                    this.datePicker.focus();
+                } else {
+                    this.datePicker.classList.add('hidden');
+                }
+            }
+            
+            setTargetDate(dateString) {
+                this.targetDate = new Date(dateString + 'T00:00:00');
+                this.updateDateDisplay();
+                this.updateCountdown();
+                localStorage.setItem('targetDate', this.targetDate.toISOString());
+                
+                setTimeout(() => {
+                    this.datePicker.classList.add('hidden');
+                }, 1000);
+            }
+            
+            updateDateDisplay() {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                this.dateButton.textContent = this.targetDate.toLocaleDateString('en-US', options);
+                this.datePicker.value = this.targetDate.toISOString().split('T')[0];
+            }
+            
+            setFormat(format) {
+                this.selectedFormat = format;
+                this.updateCountdown();
+                localStorage.setItem('selectedFormat', format);
+            }
+            
+            toggleLeaveDetails() {
+                const isHidden = this.leaveContent.classList.contains('hidden');
+                this.leaveContent.classList.toggle('hidden');
+                this.leaveChevron.classList.toggle('up');
+            }
+            
+            changeLeaveDays(delta) {
+                this.leaveDays = Math.max(0, Math.min(50, this.leaveDays + delta));
+                this.leaveDaysDisplay.textContent = this.leaveDays;
+                this.leaveDaysElement.textContent = this.leaveDays;
+                this.updateCountdown();
+                localStorage.setItem('leaveDays', this.leaveDays.toString());
+            }
+            
+            calculateWorkingDays(startDate, endDate) {
+                let workingDays = 0;
+                let currentDate = new Date(startDate);
+                
+                while (currentDate < endDate) {
+                    const weekday = currentDate.getDay();
+                    const dateString = currentDate.toISOString().split('T')[0];
+                    
+                    // Check if it's a weekday (1 = Monday, 5 = Friday)
+                    if (weekday >= 1 && weekday <= 5) {
+                        // Check if it's not a holiday
+                        if (!this.holidays.has(dateString)) {
+                            workingDays++;
+                        }
+                    }
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                return workingDays;
+            }
+            
+            countHolidays() {
+                const now = new Date();
+                let count = 0;
+                
+                for (const holiday of this.holidays) {
+                    const holidayDate = new Date(holiday + 'T00:00:00');
+                    if (holidayDate > now && holidayDate <= this.targetDate) {
+                        count++;
+                    }
+                }
+                
+                return count;
+            }
+            
+            updateCountdown() {
+                const now = new Date();
+                
+                // Check if retired
+                if (now >= this.targetDate) {
+                    this.isRetired = true;
+                    this.countdownText.innerHTML = '<div class="celebration">🎊 TIME\'S UP! 🎊</div>';
+                    return;
+                }
+                
+                this.isRetired = false;
+                
+                // Calculate total days
+                const timeInterval = this.targetDate.getTime() - now.getTime();
+                const totalDays = Math.ceil(timeInterval / (1000 * 60 * 60 * 24));
+                
+                // Calculate working days
+                const workingDays = this.calculateWorkingDays(now, this.targetDate);
+                const adjustedWorkingDays = Math.max(0, workingDays - this.leaveDays);
+                
+                // Update holidays count
+                this.holidaysCount.textContent = this.countHolidays();
+                
+                // Format countdown based on selected format
+                let displayText = '';
+                
+                switch (this.selectedFormat) {
+                    case 'daysOnly':
+                        displayText = `${totalDays} day${totalDays !== 1 ? 's' : ''}`;
+                        break;
+                    case 'weeksAndDays':
+                        const weeks = Math.floor(totalDays / 7);
+                        const remainingDays = totalDays % 7;
+                        displayText = `${weeks} week${weeks !== 1 ? 's' : ''} + ${remainingDays} day${remainingDays !== 1 ? 's' : ''}`;
+                        break;
+                    case 'monthsAndDays':
+                        const months = Math.floor(totalDays / 30);
+                        const monthRemainingDays = totalDays % 30;
+                        displayText = `${months} month${months !== 1 ? 's' : ''} + ${monthRemainingDays} day${monthRemainingDays !== 1 ? 's' : ''}`;
+                        break;
+                    case 'workingDaysOnly':
+                        const suffix = this.leaveDays > 0 ? ` (${this.leaveDays} PTO)` : '';
+                        displayText = `${adjustedWorkingDays} working day${adjustedWorkingDays !== 1 ? 's' : ''}${suffix}`;
+                        break;
+                    case 'workingWeeksAndDays':
+                        const workingWeeks = Math.floor(adjustedWorkingDays / 5);
+                        const remainingWorkingDays = adjustedWorkingDays % 5;
+                        const workingSuffix = this.leaveDays > 0 ? ` (${this.leaveDays} PTO)` : '';
+                        displayText = `${workingWeeks} working week${workingWeeks !== 1 ? 's' : ''} + ${remainingWorkingDays} working day${remainingWorkingDays !== 1 ? 's' : ''}${workingSuffix}`;
+                        break;
+                }
+                
+                this.countdownText.textContent = displayText;
+            }
+        }
+        
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new RetirementCountdown();
+        });
+    </script>
+</body>
+</html>
