@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Countdown</title>
+    <title>Where is John?</title>
     <style>
         * {
             margin: 0;
@@ -193,9 +193,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Target Date:</h2>
-            <button class="date-button" id="dateButton">January 25, 2026</button>
-            <input type="date" class="date-picker hidden" id="datePicker">
+            <h2>John's Great Escape!</h2>
+            <div class="date-button">January 26, 2026</div>
         </div>
         
         <div class="countdown-display">
@@ -203,7 +202,7 @@
         </div>
         
         <div class="format-selector">
-            <label for="formatSelect">Display Format:</label>
+            <label for="formatSelect">Pick Your Poison!</label>
             <select id="formatSelect">
                 <option value="daysOnly">Days Only</option>
                 <option value="weeksAndDays">Weeks + Days</option>
@@ -212,40 +211,12 @@
                 <option value="workingWeeksAndDays">Working Weeks + Days</option>
             </select>
         </div>
-        
-        <div class="section">
-            <div class="section-header" id="leaveHeader">
-                <span>Leave</span>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span id="leaveDaysDisplay">0</span>
-                    <span class="chevron" id="leaveChevron">▼</span>
-                </div>
-            </div>
-            <div class="section-content hidden" id="leaveContent">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span>Total leave days:</span>
-                    <div class="stepper">
-                        <button id="decreaseLeave">−</button>
-                        <span id="leaveDays">0</span>
-                        <button id="increaseLeave">+</button>
-                    </div>
-                </div>
-                <div class="help-text">These will be subtracted from working days</div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <div class="section-header">
-                <span>Holidays</span>
-                <span id="holidaysCount">0</span>
-            </div>
-        </div>
     </div>
 
     <script>
         class RetirementCountdown {
             constructor() {
-                this.targetDate = new Date('2026-01-25');
+                this.targetDate = new Date('2026-01-26');
                 this.leaveDays = parseInt(localStorage.getItem('leaveDays') || '0');
                 this.selectedFormat = localStorage.getItem('selectedFormat') || 'daysOnly';
                 this.isRetired = false;
@@ -270,39 +241,16 @@
             }
             
             initializeElements() {
-                this.dateButton = document.getElementById('dateButton');
-                this.datePicker = document.getElementById('datePicker');
                 this.countdownText = document.getElementById('countdownText');
                 this.formatSelect = document.getElementById('formatSelect');
-                this.leaveHeader = document.getElementById('leaveHeader');
-                this.leaveContent = document.getElementById('leaveContent');
-                this.leaveChevron = document.getElementById('leaveChevron');
-                this.leaveDaysDisplay = document.getElementById('leaveDaysDisplay');
-                this.leaveDaysElement = document.getElementById('leaveDays');
-                this.decreaseLeave = document.getElementById('decreaseLeave');
-                this.increaseLeave = document.getElementById('increaseLeave');
-                this.holidaysCount = document.getElementById('holidaysCount');
             }
             
             bindEvents() {
-                this.dateButton.addEventListener('click', () => this.toggleDatePicker());
-                this.datePicker.addEventListener('change', (e) => this.setTargetDate(e.target.value));
                 this.formatSelect.addEventListener('change', (e) => this.setFormat(e.target.value));
-                this.leaveHeader.addEventListener('click', () => this.toggleLeaveDetails());
-                this.decreaseLeave.addEventListener('click', () => this.changeLeaveDays(-1));
-                this.increaseLeave.addEventListener('click', () => this.changeLeaveDays(1));
             }
             
             loadSavedData() {
-                const savedDate = localStorage.getItem('targetDate');
-                if (savedDate) {
-                    this.targetDate = new Date(savedDate);
-                }
-                
-                this.updateDateDisplay();
                 this.formatSelect.value = this.selectedFormat;
-                this.leaveDaysDisplay.textContent = this.leaveDays;
-                this.leaveDaysElement.textContent = this.leaveDays;
             }
             
             toggleDatePicker() {
@@ -408,9 +356,6 @@
                 // Calculate working days
                 const workingDays = this.calculateWorkingDays(now, this.targetDate);
                 const adjustedWorkingDays = Math.max(0, workingDays - this.leaveDays);
-                
-                // Update holidays count
-                this.holidaysCount.textContent = this.countHolidays();
                 
                 // Format countdown based on selected format
                 let displayText = '';
